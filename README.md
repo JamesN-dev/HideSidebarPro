@@ -1,7 +1,7 @@
 # HideSidebarPro
 Description
 
-HideSidebarPro is a alpha BetterDiscord plugin that enhances your Discord experience by allowing you to hide the channel sidebar and/or server list.
+HideSidebarPro is a BetterDiscord plugin that allows you to hide the channel sidebar and/or server list.
 
 Still in alpha stages. Please report any bugs to james@jamesn.design.
 
