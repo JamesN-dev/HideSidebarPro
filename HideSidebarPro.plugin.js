@@ -1,6 +1,6 @@
 /**
  * @name HideSidebarPro
- * @version 0.0.2
+ * @version 0.2.0
  * @description Hides the sidebar and reveals on hover. Toggle server list with icon in top right.
  * @author atetrax
  * @authorLink https://github.com/JamesN-dev
