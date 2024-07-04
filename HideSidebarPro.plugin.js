@@ -24,10 +24,10 @@ module.exports = class HideSidebarPro {
     start() {
         console.log('HideSidebarPro initializing...');
 
+        this.applyInitialStyles();
         if (!this.settings.removeButton) {
             this.addHideServersButton();
         }
-        this.applyInitialStyles();
         if (this.settings.hideServers) {
             this.hideServerSidebar(); // Hide server list on startup if setting is enabled
         }
@@ -100,15 +100,35 @@ module.exports = class HideSidebarPro {
                     buttonWrapper.setAttribute('aria-expanded', String(!isExpanded));
                     guildsWrapper.style.display = isExpanded ? '' : 'none';
 
-                    buttonWrapper.setAttribute('title', isExpanded ? 'Show Servers' : 'Hide Servers');
+                    buttonWrapper.setAttribute('title', isExpanded ? 'Hide Servers' : 'Show Servers');
                 }
             };
         }
     }
     
     checkAndAddButton() {
-        if (!document.getElementById('toolbar-hds-btn')) {
-            this.addHideServersButton();
+        const button = document.getElementById('toolbar-hds-btn');
+        if (this.settings.removeButton) {
+            if (button) {
+                button.remove();
+            }
+        } else {
+            if (!button) {
+                this.addHideServersButton();
+            }
+        }
+    }
+
+    checkAndAddSmallServerList() {
+        const sidebar = document.querySelector('[class*="sidebar-"]');
+        if (this.settings.smallServerList) {
+            if (!sidebar) {
+                this.addSmallServerList();
+            }
+        } else {
+            if (sidebar) {
+                sidebar.remove();
+            }
         }
     }
 
@@ -123,43 +143,72 @@ module.exports = class HideSidebarPro {
                 width: 240px !important;
                 padding-left: 0 !important;
             }
-
+    
             body.channel-hide div[class*="sidebar"] > * {
                 visibility: hidden;
                 opacity: 0;
                 transition: visibility 0s 0.25s, opacity 0.25s linear;
             }
-
+    
             body.channel-hide div[class*="sidebar"]:hover > * {
                 visibility: visible;
                 opacity: 1;
                 transition: opacity 0.25s linear;
             }
-
-            #hds-btn {
+    
+            #toolbar-hds-btn {
                 display: block;
-                background: #4f5660;
-                color: white;
+                background: none;
+                color: #ffffff;
                 padding-top: 5px;
                 padding-bottom: 5px;
                 z-index: 100;
                 border-radius: 4px;
                 width: 100px; // Set button width
             }
-
+    
+            #toolbar-hds-btn svg path {
+                fill: #B5BAC1; /* Unhovered icon color */
+            }
+    
+            #toolbar-hds-btn:hover svg path {
+                fill: #DCDEE1; /* Hovered icon color */
+            }
+    
+            .tooltip-3ub5_i::after {
+                content: attr(title);
+                position: absolute;
+                background: #111214; /* Tooltip background color */
+                color: #ffffff; /* Tooltip text color */
+                padding: 5px 10px;
+                border-radius: 4px;
+                white-space: nowrap;
+                top: 100%; /* Position the tooltip below the icon */
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 200;
+                font-size: 12px;
+                opacity: 0;
+                transition: opacity 0.2s ease-in-out;
+            }
+    
+            #toolbar-hds-btn:hover .tooltip-3ub5_i::after {
+                opacity: 1;
+            }
+    
             body.channel-hide .noticeInfo-3_iTE1,
             .notice-2FJMB4 {
                 z-index: 1000;
             }
-
+    
             body.channel-hide div[class*="toolbar-"] {
                 padding-right: 100px;
             }
-
+    
             body.channel-hide .container-3gCOGc {
                 z-index: 0;
             }
-
+    
             body.channel-hide #hds-btn {
                 display: block;
                 background: #4f5660;
@@ -173,7 +222,7 @@ module.exports = class HideSidebarPro {
                 border-radius: 4px;
                 width: 90px;
             }
-
+    
             body.channel-hide.channel-hide div[class*="sidebar"] {
                 transition: all 0.1s ease 0.1s;
                 width: 0 !important;
@@ -183,13 +232,13 @@ module.exports = class HideSidebarPro {
                 width: 240px !important;
                 padding-left: 0 !important;
             }
-
+    
             body.channel-hide.channel-hide div[class*="sidebar"] > * {
                 visibility: hidden;
                 opacity: 0;
                 transition: visibility 0s 0.2s, opacity 0.2s linear;
             }
-
+    
             body.channel-hide.channel-hide div[class*="sidebar"]:hover > * {
                 visibility: visible;
                 opacity: 1;
@@ -197,24 +246,24 @@ module.exports = class HideSidebarPro {
             }
         `;
         BdApi.injectCSS('HideSidebarStyles', style);
-
+    
         if (this.settings.smallServerList) {
             const smallServerListStyle = `
                 nav[aria-label="Servers sidebar"] {
                     display: flex;
                     width: 55px;
                 }
-
+    
                 nav[aria-label="Servers sidebar"] ul[class^="tree_"] div {
                    align-self: center;
                    justify-self: center;
                 }
-
+    
                 nav[aria-label="Servers sidebar"] div[class^="listItem"] {
                     align-self: center;
                     justify-self: center;
                 }
-
+    
                 .svg_c5f96a,
                 .wrapper_c5f96a {
                     height: 35px !important;
@@ -241,7 +290,7 @@ module.exports = class HideSidebarPro {
             sidebar.classList.add('visible');
             document.body.classList.remove('channel-hide');
         } else {
-            console.error('        sidebar element not found.');
+            console.error('Sidebar element not found.');
         }
     }
 
@@ -261,47 +310,31 @@ module.exports = class HideSidebarPro {
     getSettingsPanel() {
         const panel = document.createElement("div");
 
-        const createSetting = (name, key, type) => {
+        const createSetting = (name, key) => {
             const settingDiv = document.createElement("div");
             settingDiv.className = "setting";
 
-            const label = document.createElement("span");
+            const label = document.createElement("label");
             label.textContent = name;
 
-            let input;
-            if (type === "checkbox") {
-                input = document.createElement("input");
-                input.type = type;
-                input.checked = this.settings[key];
-                input.onchange = (e) => {
-                    this.settings[key] = e.target.checked;
-                };
-            } else {
-                input = document.createElement("input");
-                input.type = type;
-                input.value = this.settings[key];
-                input.onchange = (e) => {
-                    this.settings[key] = type === "number" ? parseInt(e.target.value) : e.target.value;
-                };
-            }
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.checked = this.settings[key];
+            input.onchange = (e) => {
+                this.settings[key] = e.target.checked;
+                this.saveSettings();
+                this.applySettings();
+            };
 
-            settingDiv.appendChild(label);
             settingDiv.appendChild(input);
+            settingDiv.appendChild(label);
             return settingDiv;
         };
 
-        panel.appendChild(createSetting("Small Server List", "smallServerList", "checkbox"));
-        panel.appendChild(createSetting("Hide Server Button", "removeButton", "checkbox"));
-        panel.appendChild(createSetting("Hide Servers", "hideServers", "checkbox"));
-
-        const reloadButton = document.createElement("button");
-        reloadButton.textContent = "Reload Discord";
-        reloadButton.onclick = () => {
-            this.saveSettings();
-            location.reload();
-        };
-
-        panel.appendChild(reloadButton);
+        const removeButtonLabel = this.settings.removeButton ? "Show Hide Servers Icon" : "Remove Hide Servers Icon"; 
+        panel.appendChild(createSetting(removeButtonLabel, "removeButton"));
+        panel.appendChild(createSetting("Small Server List", "smallServerList"));
+        panel.appendChild(createSetting("Reveal Sidebar On Hover", "hideServers"));
 
         return panel;
     }
