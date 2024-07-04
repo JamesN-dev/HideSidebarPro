@@ -1,6 +1,6 @@
 /**
  * @name HideSidebarPro
- * @version 0.2.0
+ * @version 0.3.0
  * @description Hides the sidebar and reveals on hover. Toggle server list with icon in top right.
  * @author atetrax
  * @authorLink https://github.com/JamesN-dev
@@ -14,7 +14,6 @@
 module.exports = class HideSidebarPro {
     constructor() {
         this.defaultSettings = {
-            buttonText: 'Hide Servers',
             smallServerList: false,
             removeButton: false,
             hideServers: true
@@ -30,8 +29,15 @@ module.exports = class HideSidebarPro {
         }
         this.applyInitialStyles();
         if (this.settings.hideServers) {
-            this.hideSidebar(); // Hide sidebar on startup
+            this.hideServerSidebar(); // Hide server list on startup if setting is enabled
         }
+
+        // Checks for HideServersButton when changes are detected and adds it if it doesn't exist
+        this.observer = new MutationObserver(() => {
+            this.checkAndAddButton();
+        });
+
+        this.observer.observe(document.body, { childList: true, subtree: true });
 
         console.log('HideSidebarPro initialized.');
     }
@@ -39,16 +45,21 @@ module.exports = class HideSidebarPro {
     stop() {
         BdApi.clearCSS('HideSidebarStyles');
         BdApi.clearCSS('SmallServerListStyles');
-        const hideButton = document.getElementById('hds-btn');
+        const hideButton = document.getElementById('toolbar-hds-btn');
         if (hideButton) {
             hideButton.remove();
         }
         document.body.classList.remove('channel-hide'); // Ensure the sidebar is shown when the plugin stops
+
+        // Disconnect observer
+        if (this.observer) {
+            this.observer.disconnect();
+        }
     }
 
     addHideServersButton() {
         const toolbar = document.querySelector('.toolbar_e44302');
-        if (toolbar) {
+        if (toolbar && !document.getElementById('toolbar-hds-btn')) {
             const buttonWrapper = document.createElement('div');
             buttonWrapper.className = 'iconWrapper_e44302 clickable_e44302';
             buttonWrapper.setAttribute('role', 'button');
@@ -56,23 +67,28 @@ module.exports = class HideSidebarPro {
             buttonWrapper.setAttribute('aria-label', 'Toggle Servers');
             buttonWrapper.setAttribute('aria-expanded', 'false');
             buttonWrapper.setAttribute('tabindex', '0');
+
+            buttonWrapper.setAttribute('title', 'Hide Servers');
     
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('x', '0');
             svg.setAttribute('y', '0');
             svg.setAttribute('aria-hidden', 'true');
             svg.setAttribute('role', 'img');
-            svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
             svg.setAttribute('width', '24');
             svg.setAttribute('height', '24');
-            svg.setAttribute('fill', 'none');
             svg.setAttribute('viewBox', '0 0 24 24');
-    
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('fill', 'currentColor');
-            path.setAttribute('d', 'M12 2.81a1 1 0 0 1 0-1.41l.36-.36a1 1 0 0 1 1.41 0l9.2 9.2a1 1 0 0 1 0 1.4l-.7.7a1 1 0 0 1-1.3.13l-9.54-6.72a1 1 0 0 1-.08-1.58l1-1L12 2.8ZM12 21.2a1 1 0 0 1 0 1.41l-.35.35a1 1 0 0 1-1.41 0l-9.2-9.19a1 1 0 0 1 0-1.41l.7-.7a1 1 0 0 1 1.3-.12l9.54 6.72a1 1 0 0 1 .07 1.58l-1 1 .35.36ZM15.66 16.8a1 1 0 0 1-1.38.28l-8.49-5.66A1 1 0 1 1 6.9 9.76l8.49 5.65a1 1 0 0 1 .27 1.39ZM17.1 14.25a1 1 0 1 0 1.11-1.66L9.73 6.93a1 1 0 0 0-1.11 1.66l8.49 5.66Z');
-            path.setAttribute('clip-rule', 'evenodd');
-            svg.appendChild(path);
+            
+            const serverPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            serverPath.setAttribute('fill', 'currentColor');
+            serverPath.setAttribute('d', 'M20 7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7zM6 7h12v2H6V7zm0 4h12v2H6v-2zm0 4h12v2H6v-2z');
+            
+            const linePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            linePath.setAttribute('fill', 'currentColor');
+            linePath.setAttribute('d', 'M3.707 2.293a1 1 0 0 0-1.414 1.414l18 18a1 1 0 0 0 1.414-1.414l-18-18z');
+            
+            svg.appendChild(serverPath);
+            svg.appendChild(linePath);
     
             buttonWrapper.appendChild(svg);
             toolbar.appendChild(buttonWrapper);
@@ -83,8 +99,16 @@ module.exports = class HideSidebarPro {
                     const isExpanded = buttonWrapper.getAttribute('aria-expanded') === 'true';
                     buttonWrapper.setAttribute('aria-expanded', String(!isExpanded));
                     guildsWrapper.style.display = isExpanded ? '' : 'none';
+
+                    buttonWrapper.setAttribute('title', isExpanded ? 'Show Servers' : 'Hide Servers');
                 }
             };
+        }
+    }
+    
+    checkAndAddButton() {
+        if (!document.getElementById('toolbar-hds-btn')) {
+            this.addHideServersButton();
         }
     }
 
@@ -201,7 +225,7 @@ module.exports = class HideSidebarPro {
         }
     }
 
-    hideSidebar() {
+    hideServerSidebar() {
         const sidebar = document.querySelector('[class*="sidebar"]');
         if (sidebar) {
             sidebar.classList.remove('visible');
@@ -266,7 +290,6 @@ module.exports = class HideSidebarPro {
             return settingDiv;
         };
 
-        panel.appendChild(createSetting("Button Text", "buttonText", "text"));
         panel.appendChild(createSetting("Small Server List", "smallServerList", "checkbox"));
         panel.appendChild(createSetting("Hide Server Button", "removeButton", "checkbox"));
         panel.appendChild(createSetting("Hide Servers", "hideServers", "checkbox"));

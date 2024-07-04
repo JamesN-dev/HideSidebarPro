@@ -1,0 +1,14 @@
+
+.*
+
+*.log
+
+.DS_Store
+Thumbs.db
+
+*.bak
+*.tmp
+.vscode/
+
+# Do not ignore this specific file
+!.gitignore
